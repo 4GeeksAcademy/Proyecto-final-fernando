@@ -1,37 +1,85 @@
-// Import necessary hooks and components from react-router-dom and other libraries.
-import { Link, useParams } from "react-router-dom";  // To use link for navigation and useParams to get URL parameters
-import PropTypes from "prop-types";  // To define prop types for this component
-import rigoImageUrl from "../assets/img/rigo-baby.jpg"  // Import an image asset
-import useGlobalReducer from "../hooks/useGlobalReducer";  // Import a custom hook for accessing the global state
+import { Link, useParams } from "react-router-dom";
+import { useEffect, useState } from "react";
+import PropTypes from "prop-types";
+import useGlobalReducer from "../hooks/useGlobalReducer";
 
-// Define and export the Single component which displays individual item details.
 export const Single = props => {
-  // Access the global state using the custom hook.
-  const { store } = useGlobalReducer()
+  const { store, dispatch } = useGlobalReducer();
+  const { theId } = useParams();
+  const [course, setCourse] = useState(null);
 
-  // Retrieve the 'theId' URL parameter using useParams hook.
-  const { theId } = useParams()
-  const singleTodo = store.todos.find(todo => todo.id === parseInt(theId));
+  const id = parseInt(theId);
+
+  const loadCourse = async () => {
+    const fromStore = store.courses.find(c => c.id === id);
+    if (fromStore) {
+      setCourse(fromStore);
+      return;
+    }
+    try {
+      const resp = await fetch(
+        import.meta.env.VITE_BACKEND_URL + "/courses/" + id
+      );
+      const data = await resp.json();
+      setCourse(data);
+    } catch (err) {
+      console.error("Error loading course detail:", err);
+    }
+  };
+
+  const addToCart = () => {
+    if (course) {
+      dispatch({ type: "add_to_cart", payload: course });
+    }
+  };
+
+  useEffect(() => {
+    loadCourse();
+  }, [theId, store.courses]);
+
+  if (!course) {
+    return (
+      <div className="container text-center mt-5">
+        <h2>Cargando curso...</h2>
+        <Link to="/demo" className="btn btn-secondary mt-3">
+          Volver al catálogo
+        </Link>
+      </div>
+    );
+  }
 
   return (
-    <div className="container text-center">
-      {/* Display the title of the todo element dynamically retrieved from the store using theId. */}
-      <h1 className="display-4">Todo: {singleTodo?.title}</h1>
-      <hr className="my-4" />  {/* A horizontal rule for visual separation. */}
+    <div className="container mt-4">
+      <div className="row">
+        <div className="col-md-6">
+          <img
+            src={course.image_url}
+            alt={course.title}
+            className="img-fluid rounded"
+          />
+        </div>
+        <div className="col-md-6">
+          <h1 className="display-5">{course.title}</h1>
+          <p className="mt-3">{course.description}</p>
+          <h3 className="mt-3">{course.price} €</h3>
 
-      {/* A Link component acts as an anchor tag but is used for client-side routing to prevent page reloads. */}
-      <Link to="/">
-        <span className="btn btn-primary btn-lg" href="#" role="button">
-          Back home
-        </span>
-      </Link>
+          <button className="btn btn-primary me-2 mt-3" onClick={addToCart}>
+            Añadir al carrito
+          </button>
+
+          <Link to="/demo" className="btn btn-secondary mt-3 me-2">
+            Volver al catálogo
+          </Link>
+
+          <Link to="/" className="btn btn-outline-dark mt-3">
+            Volver al inicio
+          </Link>
+        </div>
+      </div>
     </div>
   );
 };
 
-// Use PropTypes to validate the props passed to this component, ensuring reliable behavior.
 Single.propTypes = {
-  // Although 'match' prop is defined here, it is not used in the component.
-  // Consider removing or using it as needed.
   match: PropTypes.object
 };
