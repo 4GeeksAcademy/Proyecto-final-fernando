@@ -168,10 +168,15 @@ def delete_course(course_id):
     user = get_current_user()
     if not user or not user.is_admin:
         return jsonify({"msg": "forbidden"}), 403
+
     course = Course.query.get_or_404(course_id)
+
+    Enrollment.query.filter_by(course_id=course.id).delete()
     db.session.delete(course)
     db.session.commit()
+
     return jsonify({"msg": "deleted"}), 200
+
 
 
 @api.route('/checkout', methods=['POST'])
@@ -188,10 +193,12 @@ def checkout():
         course = Course.query.get(cid)
         if not course:
             continue
-        exists = Enrollment.query.filter_by(user_id=user.id, course_id=course.id).first()
+        exists = Enrollment.query.filter_by(
+            user_id=user.id, course_id=course.id).first()
         if exists:
             continue
-        enroll = Enrollment(user_id=user.id, course_id=course.id, purchased_at=datetime.utcnow())
+        enroll = Enrollment(user_id=user.id, course_id=course.id,
+                            purchased_at=datetime.utcnow())
         db.session.add(enroll)
         created.append(enroll)
     db.session.commit()
@@ -210,7 +217,6 @@ def my_courses():
         if course:
             out.append(course.serialize())
     return jsonify(out), 200
-
 
 
 # STRIPE CHECKOUT ENDPOINT

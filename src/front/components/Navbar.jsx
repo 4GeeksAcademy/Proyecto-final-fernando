@@ -1,14 +1,14 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useEffect } from "react";
 import useGlobalReducer from "../hooks/useGlobalReducer";
+import { useState } from "react";
 
 export const Navbar = () => {
   const { store, dispatch } = useGlobalReducer();
   const navigate = useNavigate();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  useEffect(() => {
-    console.log("Navbar - Carrito actualizado:", store.cart.length);
-  }, [store.cart]);
+  const cartCount = Array.isArray(store.cart) ? store.cart.length : 0;
+  const isLogged = !!store.token;
 
   const handleLogout = () => {
     dispatch({ type: "set_token", payload: null });
@@ -17,54 +17,96 @@ export const Navbar = () => {
     navigate("/");
   };
 
-  const cartCount = Array.isArray(store.cart) ? store.cart.length : 0;
-  const isLogged = !!store.token;
-
-  const navbarKey = `nav-${cartCount}`;
+  const menuItems = [
+    { name: "Inicio", path: "/" },
+    { name: "Testimonios", path: "/testimonios" },
+    { name: "Blog", path: "/blog" },
+    { name: "Cursos", path: "/demo" },
+    { name: "Nosotros", path: "/nosotros" }
+  ];
 
   return (
-    <nav key={navbarKey} className="navbar navbar-light bg-light">
+    <nav className="navbar navbar-expand-lg navbar-light bg-white py-3 border-bottom">
       <div className="container">
-        <Link to="/">
-          <span className="navbar-brand mb-0 h1">E-Nutrition Courses</span>
+        <Link to="/" className="navbar-brand fw-bold fs-4 text-dark">
+          🥗 Revoluciona Tu Dieta
         </Link>
 
-        <div className="d-flex gap-2 ms-auto">
-          <Link to="/demo" className="btn btn-outline-primary btn-sm">
-            Catálogo
-          </Link>
+        <button
+          className="navbar-toggler border-0"
+          type="button"
+          onClick={() => setIsMenuOpen(!isMenuOpen)}
+          aria-expanded={isMenuOpen}
+        >
+          <span className="navbar-toggler-icon"></span>
+        </button>
 
-          {!isLogged && (
-            <Link to="/register" className="btn btn-outline-secondary btn-sm">
-              Login / Registro
+        <div className={`collapse navbar-collapse ${isMenuOpen ? "show" : ""}`}>
+          <ul className="navbar-nav mx-auto mb-2 mb-lg-0">
+            {menuItems.map((item) => (
+              <li className="nav-item mx-2" key={item.name}>
+                <Link
+                  to={item.path}
+                  className="nav-link text-dark fw-medium"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  {item.name}
+                </Link>
+              </li>
+            ))}
+            
+          
+            {isLogged && (
+              <li className="nav-item mx-2">
+                <Link
+                  to="/my-courses"
+                  className="nav-link text-dark fw-medium"
+                  onClick={() => setIsMenuOpen(false)}
+                >
+                  Mis cursos
+                </Link>
+              </li>
+            )}
+          </ul>
+
+          <div className="d-flex align-items-center gap-3">
+            <Link to="/cart" className="position-relative text-decoration-none">
+              <span className="fs-5">🛒</span>
+              {cartCount > 0 && (
+                <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+                  {cartCount}
+                </span>
+              )}
             </Link>
-          )}
 
-          {isLogged && (
-            <>
-              <span className="navbar-text small me-2">
-                {store.user?.email}
-              </span>
-
-              <Link
-                to="/my-courses"
-                className="btn btn-outline-success btn-sm"
-              >
-                Mis cursos
-              </Link>
-
-              <button
-                className="btn btn-outline-danger btn-sm"
-                onClick={handleLogout}
-              >
-                Salir
-              </button>
-            </>
-          )}
-
-          <Link to="/cart" className="btn btn-primary btn-sm">
-            Carrito ({cartCount})
-          </Link>
+            {!isLogged ? (
+              <>
+                <Link 
+                  to="/login" 
+                  className="btn btn-outline-dark btn-sm px-3"
+                >
+                  Iniciar sesión
+                </Link>
+                <Link 
+                  to="/register" 
+                  className="btn btn-primary btn-sm px-4"
+                  style={{ backgroundColor: "#4CAF50", borderColor: "#4CAF50" }}
+                >
+                  Pide tu 1ª Consulta gratis
+                </Link>
+              </>
+            ) : (
+              <>
+                <span className="text-muted small">{store.user?.email}</span>
+                <button
+                  className="btn btn-outline-danger btn-sm"
+                  onClick={handleLogout}
+                >
+                  Salir
+                </button>
+              </>
+            )}
+          </div>
         </div>
       </div>
     </nav>
